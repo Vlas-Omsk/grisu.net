@@ -35,7 +35,7 @@ namespace GrisuDotNet
     // have the most significant bit of the significand set.
     // Multiplication and Subtraction do not normalize their results.
     // DiyFp are not designed to contain special doubles (NaN and Infinity).
-    internal struct DiyFp
+    public struct DiyFp
     {
         public const int kSignificandSize = 64;
 

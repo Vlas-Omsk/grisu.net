@@ -31,11 +31,12 @@ using System.Diagnostics;
 
 namespace GrisuDotNet
 {
-    internal struct GrisuDouble
+    public struct GrisuDouble
     {
         const ulong kSignMask = 0x8000000000000000;
         const ulong kExponentMask = 0x7FF0000000000000;
         const ulong kSignificandMask = 0x000FFFFFFFFFFFFF;
+        const ulong kValueMask = kExponentMask | kSignificandMask;
         const ulong kHiddenBit = 0x0010000000000000;
         const int kPhysicalSignificandSize = 52;  // Excludes the hidden bit.
         const int kSignificandSize = 53;
@@ -45,22 +46,23 @@ namespace GrisuDotNet
         const int kMaxExponent = 0x7FF - kExponentBias;
         const ulong kInfinity = 0x7FF0000000000000;
 
+        public GrisuDouble(float f) : this((double)(decimal)f)
+        {
+        }
+
         public GrisuDouble(double d)
         {
-            value_ = d;
             d64_ = (ulong)BitConverter.DoubleToInt64Bits(d);
         }
 
         public GrisuDouble(ulong d64)
         {
             d64_ = d64;
-            value_ = BitConverter.Int64BitsToDouble((long)d64);
         }
 
         public GrisuDouble(DiyFp diy_fp)
         {
             d64_ = DiyFpToUInt64(diy_fp);
-            value_ = BitConverter.Int64BitsToDouble((long)d64_);
         }
 
         // The value encoded by this Double must be greater or equal to +0.0.
@@ -75,8 +77,6 @@ namespace GrisuDotNet
         // The value encoded by this Double must be strictly greater than 0.
         public DiyFp AsNormalizedDiyFp()
         {
-            Debug.Assert(Value > 0.0);
-
             ulong d64 = d64_;
             ulong f;
             int e;
@@ -107,6 +107,11 @@ namespace GrisuDotNet
         public ulong AsUInt64()
         {
             return d64_;
+        }
+
+        public double AsDouble()
+        {
+            return BitConverter.Int64BitsToDouble((long)d64_);
         }
 
         public int Exponent
@@ -179,7 +184,15 @@ namespace GrisuDotNet
         {
             get
             {
-                return (d64_ & kSignMask) == 0 ? 1 : -1;
+                return IsZero || IsNaN || (d64_ & kSignMask) == 0 ? 1 : -1;
+            }
+        }
+
+        public bool IsZero
+        {
+            get
+            {
+                return (d64_ & kValueMask) == 0;
             }
         }
 
@@ -197,8 +210,6 @@ namespace GrisuDotNet
         // Precondition: the value encoded by this Double must be greater than 0.
         public void NormalizedBoundaries(out DiyFp out_m_minus, out DiyFp out_m_plus)
         {
-            Debug.Assert(Value > 0.0);
-
             ulong d64 = d64_;
             ulong vF;
             int vE;
@@ -255,9 +266,9 @@ namespace GrisuDotNet
             out_m_plus = new DiyFp(plusF, plusE);
         }
 
-        public double Value
+        public void ChangeSign()
         {
-            get { return value_; }
+            d64_ ^= kSignMask;
         }
 
         // Returns the significand size for a given order of magnitude.
@@ -328,6 +339,5 @@ namespace GrisuDotNet
         }
 
         private ulong d64_;
-        private double value_;
     }
 }

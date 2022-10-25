@@ -31,7 +31,7 @@ using System.Diagnostics;
 
 namespace GrisuDotNet
 {
-    internal class PowersOfTenCache
+    internal sealed class PowersOfTenCache
     {
         // Not all powers of ten are cached. The decimal exponent of two neighboring
         // cached numbers will differ by kDecimalExponentDistance.
